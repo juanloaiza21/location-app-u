@@ -1,4 +1,4 @@
-import { IsOptional, IsDate, IsNumber, Min, IsISO8601, IsString } from 'class-validator';
+import { IsOptional, IsISO8601, IsNumber, Min, IsInt } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class QueryLocationsDto {
@@ -11,11 +11,14 @@ export class QueryLocationsDto {
   endDate?: string;
 
   @IsOptional()
-  @IsString()
-  limit?: string;
+  @IsInt()
+  @Type(() => Number)
+  @Min(1)
+  limit?: number;
 
   @IsOptional()
-  @IsString()
+  @IsInt()
+  @Type(() => Number)
   @Min(0)
-  offset?: string;
+  offset?: number;
 }

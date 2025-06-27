@@ -2,25 +2,67 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateLocationDto } from './dto/create-location.dto';
 import { QueryLocationsDto } from './dto/query-locations.dto';
+import { GeofencesService } from '../geofences/geofences.service';
 
 @Injectable()
 export class LocationsService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly geofencesService: GeofencesService,
+  ) { }
 
   async create(userId: string, createLocationDto: CreateLocationDto) {
-    return this.prisma.location.create({
+    // Convertir deviceInfo a string JSON si es un objeto
+    const deviceInfoStr = typeof createLocationDto.deviceInfo === 'object' ?
+      JSON.stringify(createLocationDto.deviceInfo) : createLocationDto.deviceInfo;
+
+    // Crear la ubicación
+    const location = await this.prisma.location.create({
       data: {
         userId,
         latitude: createLocationDto.latitude,
         longitude: createLocationDto.longitude,
         accuracy: createLocationDto.accuracy,
-        deviceInfo: JSON.stringify(createLocationDto.deviceInfo),
+        deviceInfo: deviceInfoStr,
       },
     });
+
+    try {
+      // Verificar si la ubicación está dentro de alguna geofence y generar alertas si es necesario
+      const geofenceAlerts = await this.geofencesService.checkGeofencesForLocation(
+        userId,
+        createLocationDto.latitude,
+        createLocationDto.longitude,
+        location.id
+      );
+
+      // Devolver la ubicación creada junto con cualquier alerta generada
+      return {
+        location: {
+          ...location,
+          deviceInfo: location.deviceInfo ? JSON.parse(location.deviceInfo as string) : null
+        },
+        geofenceAlerts
+      };
+    } catch (error) {
+      console.error('Error al verificar geofences:', error);
+      // Si hay un error al verificar geofences, al menos devolvemos la ubicación
+      return {
+        location: {
+          ...location,
+          deviceInfo: location.deviceInfo ? JSON.parse(location.deviceInfo as string) : null
+        },
+        geofenceAlerts: []
+      };
+    }
   }
 
   async findAll(userId: string, queryDto: QueryLocationsDto) {
     const { startDate, endDate, limit, offset } = queryDto;
+
+    // Aseguramos que limit y offset sean números
+    const limitNum = typeof limit === 'string' ? parseInt(limit, 10) : (limit || 100);
+    const offsetNum = typeof offset === 'string' ? parseInt(offset, 10) : (offset || 0);
 
     const whereClause: any = { userId };
 
@@ -35,27 +77,28 @@ export class LocationsService {
       }
     }
 
-    let limit1: number = 100
-    let offset2: number = 0
-    if (limit != undefined) { limit1 = +limit; }
-    if (offset != undefined) { offset2 = +offset; }
-
     const totalCount = await this.prisma.location.count({ where: whereClause });
     const locations = await this.prisma.location.findMany({
       where: whereClause,
-      take: limit1 || 100,
-      skip: offset2 || 0,
+      take: limitNum,  // Usamos la versión numérica
+      skip: offsetNum,  // Usamos la versión numérica
       orderBy: {
         createdAt: 'desc',
       },
     });
 
+    // Parseamos deviceInfo de vuelta a objeto si existe
+    const parsedLocations = locations.map(location => ({
+      ...location,
+      deviceInfo: location.deviceInfo ? JSON.parse(location.deviceInfo as string) : null
+    }));
+
     return {
-      data: locations,
+      data: parsedLocations,
       meta: {
         total: totalCount,
-        limit: limit || 100,
-        offset: offset || 0,
+        limit: limitNum,
+        offset: offsetNum,
       }
     };
   }
@@ -72,7 +115,11 @@ export class LocationsService {
       throw new NotFoundException('No se encontraron ubicaciones para este usuario');
     }
 
-    return latestLocation;
+    // Parsear deviceInfo si existe
+    return {
+      ...latestLocation,
+      deviceInfo: latestLocation.deviceInfo ? JSON.parse(latestLocation.deviceInfo as string) : null
+    };
   }
 
   async findOne(id: string, userId: string) {
@@ -87,7 +134,11 @@ export class LocationsService {
       throw new NotFoundException(`Ubicación con ID ${id} no encontrada`);
     }
 
-    return location;
+    // Parsear deviceInfo si existe
+    return {
+      ...location,
+      deviceInfo: location.deviceInfo ? JSON.parse(location.deviceInfo as string) : null
+    };
   }
 
   async remove(id: string, userId: string) {
@@ -103,7 +154,7 @@ export class LocationsService {
     return this.create(userId, {
       latitude: lat,
       longitude: lon,
-      deviceInfo: 'telegram_bot'
+      deviceInfo: JSON.stringify({ source: 'telegram_bot' })  // Convertir a string JSON
     });
   }
 }

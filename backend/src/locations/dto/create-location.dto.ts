@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, IsOptional, IsObject, Min, Max } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsOptional, IsObject, Min, Max, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateLocationDto {
@@ -23,6 +23,6 @@ export class CreateLocationDto {
   accuracy?: number;
 
   @IsOptional()
-  @IsObject()
+  @IsString()
   deviceInfo: string;
 }

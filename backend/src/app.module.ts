@@ -5,9 +5,6 @@ import { UsersModule } from './users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { LocationsModule } from './locations/locations.module';
 import { GeofencesModule } from './geofences/geofences.module';
-import { TelegramModule } from './telegram/telegram.module';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 
 @Module({
   imports: [
@@ -19,9 +16,6 @@ import { AppService } from './app.service';
     AuthModule,
     LocationsModule,
     GeofencesModule,
-    TelegramModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule { }
