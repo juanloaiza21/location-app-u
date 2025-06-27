@@ -43,8 +43,25 @@ export class UsersService {
     }
   }
 
+  async getUserByUid(uid: string): Promise<User | null> {
+    try {
+      return this.prisma.user.findUnique({
+        where: {
+          id: uid
+        }
+      })
+    } catch (e) {
+      this.logger.error(e);
+      throw new HttpException('Somenthing went wrong', 400)
+    }
+  }
+
   private createHash(data: string): string {
     return bcrypt.hashSync(data, bcrypt.genSaltSync(10));
+  }
+
+  compareHash(passIn: string, passSaved: string) {
+    return bcrypt.compareSync(passIn, passSaved);
   }
 
 }
