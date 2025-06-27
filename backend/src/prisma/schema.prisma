@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id      String      @id @default(uuid())
+  phoneNumber String @unique
+  password String
+  email String @unique
+  name String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  locations Location[]
+  geofence Geofence[]
+}
+
+model Location {
+  id         String   @id @default(uuid())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  latitude   Decimal  @db.Decimal(10, 7)
+  longitude  Decimal  @db.Decimal(10, 7)
+  accuracy   Decimal? @db.Decimal(10, 2)
+  deviceInfo String?  
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@map("locations")
+}
+
+model Geofence {
+  id              String   @id @default(uuid())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  name            String
+  centerLatitude  Decimal  @db.Decimal(10, 7)
+  centerLongitude Decimal  @db.Decimal(10, 7)
+  radiusMeters    Decimal  @db.Decimal(10, 2)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+  @@map("geofences")
+}
