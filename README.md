@@ -263,4 +263,4 @@ This project is licensed under the UNLICENSED license as specified in the packag
 
 ---
 
-Created by [Juan Loaiza](https://github.com/juanloaiza21)
+Created by [Oscar Guzman](https://github.com/Gordotron) &  [Juan Loaiza](https://github.com/juanloaiza21) 
