@@ -5,6 +5,10 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { Alert } from 'react-native';
+
+import { loginUser } from '../api/auth';
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View,
   Text,
@@ -23,14 +27,29 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
+  
+    const handleLogin = async () => {
+      if (!email || !password) {
+        Alert.alert('Error', 'Por favor completa todos los campos.');
+        return;
+      }
 
-    const handleLogin = () => {
-    if (email === 'C' && password === '1') {
-      login(); // 👈 Esto activa el Drawer
-    } else {
-      Alert.alert('Error', 'Credenciales incorrectas');
-    }
-  };
+      try {
+        
+        const { access_token, user } = await loginUser({ email, password });
+
+        await AsyncStorage.setItem('token', access_token);
+
+        const savedToken = await AsyncStorage.getItem('token');
+        //console.log('📦 Token guardado en AsyncStorage:', savedToken);
+
+        login(); // Para abrir el Drawer
+
+        Alert.alert('Bienvenido', `Hola ${user.email}`);
+      } catch (err: any) {
+        Alert.alert('Error', err.message);
+      }
+    };
 
   return (
     <View style={styles.container}>

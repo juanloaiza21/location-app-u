@@ -4,6 +4,8 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { Alert } from 'react-native';
+import { registerUser } from '../api/auth';
+
 import {
   View,
   Text,
@@ -13,11 +15,13 @@ import {
   Image,
 } from 'react-native';
 
+
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignUp'>;
 
 export default function SignUpScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [telephone, setTelephone] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -38,6 +42,15 @@ export default function SignUpScreen() {
         placeholderTextColor="#999"
         value={name}
         onChangeText={setName}
+      />
+
+      <Text style={styles.label}>Phone number</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="123-456-7890"
+        placeholderTextColor="#999"
+        value={telephone}
+        onChangeText={setTelephone}
       />
 
       <Text style={styles.label}>Email</Text>
@@ -85,18 +98,15 @@ export default function SignUpScreen() {
           alert('Passwords do not match');
           return;
         }
-
+        registerUser({ name, email, password, telephone })
+                .then(() => {
+                  Alert.alert('Success', 'You can now log in with your credentials.');
+                  navigation.navigate('Login');
+                }).catch((error) => {
+                  Alert.alert('Error', 'There was an error creating your account. Please try again later.')
+                  console.error('Registration error:', error);
+                });
         // Aquí luego irá la lógica con backend
-        Alert.alert(
-          'Welcome!', 
-          'Your account has been created successfully.',
-          [
-            {
-              text: 'Go to Login',
-              onPress: () => navigation.navigate('Login'),
-            },
-          ]
-        );
         }}
       >
         <Text style={styles.signUpButtonText}>Sign Up</Text>
